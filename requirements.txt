@@ -1,5 +1,6 @@
- Flask==2.0.3
- numpy
- opencv-python
- torch
- ultralytics
+Flask==2.0.3
+numpy
+opencv-python
+torch
+ultralytics
+gunicorn
