@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, jsonify
 import urllib.request
 import numpy as np
 import cv2
@@ -8,11 +8,12 @@ from ultralytics import YOLO
 app = Flask(__name__)
 
 # ESP32-CAM Stream URL (Update with your ESP32 IP)
-ESP32_URL = "http://192.168.205.210/capture"
+ESP32_URL = "http://192.168.101.26/capture"
 
-# Load YOLOv8 model (Ensure you use a lightweight model for better speed on Render)
+# Load YOLOv8 model (Use a lightweight model for better performance)
 model = YOLO("yolov8n.pt")
 
+# Function to determine object position
 def get_position(x, frame_width):
     if x < frame_width // 3:
         return "Left"
@@ -21,10 +22,17 @@ def get_position(x, frame_width):
     else:
         return "Center"
 
+# Function to calculate object proximity (normalized distance)
 def get_proximity(y1, y2, frame_height):
     box_height = y2 - y1
-    return box_height / frame_height  # Normalize proximity value
+    return box_height / frame_height  # Normalized proximity value
 
+# Health-check endpoint
+@app.route("/", methods=["GET"])
+def home():
+    return jsonify({"message": "Object Detection Server is Running!"})
+
+# Object detection endpoint
 @app.route("/detect", methods=["GET"])
 def detect_objects():
     try:
@@ -36,27 +44,27 @@ def detect_objects():
         
         # Perform object detection
         results = model(frame)
-        
+
         detected_objects = []
         for detection in results[0].boxes.data:
             x1, y1, x2, y2 = map(int, detection[:4])
             obj_class = int(detection[5])  # Object class index
             object_name = model.names[obj_class]
-            
+
             # Calculate object position & proximity
             object_x_center = (x1 + x2) // 2
             position = get_position(object_x_center, frame_width)
             proximity = get_proximity(y1, y2, frame_height)
-            
+
             detected_objects.append({
                 "name": object_name,
                 "position": position,
                 "proximity": proximity
             })
-        
+
         # Sort objects by proximity (closest first)
         detected_objects.sort(key=lambda obj: obj["proximity"], reverse=True)
-        
+
         return jsonify(detected_objects)
     except Exception as e:
         return jsonify({"error": str(e)})
