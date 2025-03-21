@@ -1,0 +1,12 @@
+services:
+  - type: web
+    name: flask-app
+    env: python
+    region: oregon # Change to your preferred region if needed
+    buildCommand: "" # No specific build command needed
+    startCommand: gunicorn app2:app --bind 0.0.0.0:$PORT
+    pythonVersion: 3.9 # Adjust to your Python version
+    envVars:
+      - key: FLASK_ENV
+        value: production
+    plan: free # Use "starter" or "pro" for higher plans
